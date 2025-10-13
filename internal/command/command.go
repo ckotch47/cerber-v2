@@ -28,22 +28,23 @@ func init(){
 
 // Execute запускает root команду
 func Execute() {
-	
-
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func cleanDomain(domain string) string {
-	// Убираем "http://", "https://", "www."
-	domain = strings.TrimPrefix(domain, "http://")
-	domain = strings.TrimPrefix(domain, "https://")
-	domain = strings.TrimSuffix(domain, "/")
-	
-	if res := strings.HasPrefix(domain, "www."); res {
-		domain = domain[4:]
+func cleanDomain(searchDomain string) string {
+	if len(searchDomain) == 0 {
+		panic("not domain")
 	}
-	return domain
+	// Убираем "http://", "https://", "www."
+	searchDomain = strings.TrimPrefix(searchDomain, "http://")
+	searchDomain = strings.TrimPrefix(searchDomain, "https://")
+	searchDomain = strings.TrimSuffix(searchDomain, "/")
+	
+	if res := strings.HasPrefix(searchDomain, "www."); res {
+		searchDomain = searchDomain[4:]
+	}
+	return searchDomain
 }

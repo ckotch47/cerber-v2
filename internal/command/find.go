@@ -47,9 +47,9 @@ func FindHost(cmd *cobra.Command, args []string) {
 	}
 
 	domain := cleanDomain(args[0])
-	worldList := utils.ReadFile(commandBruteForce.WorldList)
+	domainList := utils.ReadFile(commandBruteForce.WorldList)
 	
-	findSubDomains(domain, worldList, 0)
+	findSubDomains(domain, domainList, 0)
 }
 
 func findSubDomains(domain string, worldlist []string, depth int) {
