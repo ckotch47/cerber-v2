@@ -17,6 +17,7 @@ type BruteForceType struct {
 type AdminFindeType struct {
 	WorldList string
 	Exclude []string
+	Timeout int
 }
 
 func ReadFile(path string) []string {

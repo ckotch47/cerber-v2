@@ -4,91 +4,106 @@ import (
 	"cerber/internal/style"
 	"cerber/internal/utils"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
 
-var commandAdminFinder utils.AdminFindeType
+var commandPathFinder utils.AdminFindeType
+
 type StringSlice map[string]bool
 
-var findAdminCmd = &cobra.Command{
-	Use:   "admin",
+var findPathCmd = &cobra.Command{
+	Use:   "path",
 	Short: "Поиск админ панелей",
 	Long:  `Поиск админ панелей`,
-	Run: FindAdminPanels,
+	Run:   FindHiddenPath,
 }
 
 func init() {
-	findAdminCmd.Flags().StringVarP(
-		&commandAdminFinder.WorldList,
-		"worldlis", 
-		"w", 
-		"", 
+	findPathCmd.Flags().StringVarP(
+		&commandPathFinder.WorldList,
+		"worldlis",
+		"w",
+		"",
 		"Файл со списком",
 	)
-	findAdminCmd.Flags().StringArrayVarP(
-		&commandAdminFinder.Exclude,
-		"exclude", 
-		"e", 
-		[]string{}, 
+	findPathCmd.Flags().StringArrayVarP(
+		&commandPathFinder.Exclude,
+		"exclude",
+		"e",
+		[]string{},
 		"статусы для исключения",
+	)
+	findPathCmd.Flags().IntVarP(
+		&commandPathFinder.Timeout,
+		"timeout",
+		"t",
+		5,
+		"Время задержки между запросами в секндах (по умолчанию 5 сек)",
 	)
 }
 
-func FindAdminPanels(cmd *cobra.Command, args []string) {
-	if(len(args) == 0){
+func FindHiddenPath(cmd *cobra.Command, args []string) {
+	if len(args) == 0 {
 		fmt.Println(style.NotFoundStyle.Render("Не указан домен"))
 		return
 	}
-	if(commandAdminFinder.WorldList == ""){
+	if commandPathFinder.WorldList == "" {
 		fmt.Println(style.NotFoundStyle.Render("Файл со списком не найден"))
 		return
 	}
 	domain := strings.TrimSuffix(args[0], "/")
-	worldList := utils.ReadFile(commandAdminFinder.WorldList)
-
+	worldList := utils.ReadFile(commandPathFinder.WorldList)
 
 	for _, path := range worldList {
-		get(domain + "/" + path, path)
+		get(domain+"/"+path, path)
 	}
 }
 
 func get(url, path string) {
-		// Делаем GET-запрос
+	// Делаем GET-запрос
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Ошибка запроса:", style.NotFoundStyle.Render(err.Error()))
 		return
 	}
-	defer resp.Body.Close() // обязательно закрываем тело ответа
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body) // обязательно закрываем тело ответа
 	printRespStatus(resp, path)
+	time.Sleep(time.Duration(commandPathFinder.Timeout) * time.Second)
 }
 
 func printRespStatus(resp *http.Response, path string) {
 	var strResp string
 
-	if arrayToMap(commandAdminFinder.Exclude)[strconv.Itoa(resp.StatusCode)]{
+	if arrayToMap(commandPathFinder.Exclude)[strconv.Itoa(resp.StatusCode)] {
 		return
 	}
 
 	if resp.StatusCode > 400 {
 		strResp = path + " : " + style.NotFoundStyle.Render(strconv.Itoa(resp.StatusCode))
-	}else{
+	} else {
 		strResp = path + " : " + style.SuccessStyle.Render(strconv.Itoa(resp.StatusCode))
 	}
 
 	fmt.Println(strResp) // выводим статус ответа
 }
 
-func arrayToMap(exclude []string) StringSlice{
-	if(exclude == nil){
+func arrayToMap(exclude []string) StringSlice {
+	if exclude == nil {
 		return StringSlice{}
 	}
 	res := make(StringSlice)
-	
+
 	for _, code := range exclude {
 		if code != "" {
 			res[code] = true
