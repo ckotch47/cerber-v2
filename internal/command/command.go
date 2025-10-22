@@ -10,18 +10,25 @@ import (
 
 // rootCmd — основная команда
 var rootCmd = &cobra.Command{
-	Use:   "cerber",
+	Use:   "cerber [domain]",
 	Short: "Краткое описание",
 	Long:  `Полное описание моего приложения`,
+	Args:  cobra.ExactArgs(1), // Ожидаем ровно один аргумент
+	Run: func(cmd *cobra.Command, args []string) {
+
+		lookupHostRun(cmd, args)
+
+		// Например, вызвать аналог find или lookup:
+		// processDomain(domain)
+	},
 }
 
-
-func init(){
+func init() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.AddCommand(versionCmd)
-	
+
 	rootCmd.AddCommand(findCmd)
-	findCmd.AddCommand(findAdminCmd)
+	findCmd.AddCommand(findPathCmd)
 
 	rootCmd.AddCommand(LookCmd)
 }
@@ -42,7 +49,7 @@ func cleanDomain(searchDomain string) string {
 	searchDomain = strings.TrimPrefix(searchDomain, "http://")
 	searchDomain = strings.TrimPrefix(searchDomain, "https://")
 	searchDomain = strings.TrimSuffix(searchDomain, "/")
-	
+
 	if res := strings.HasPrefix(searchDomain, "www."); res {
 		searchDomain = searchDomain[4:]
 	}
