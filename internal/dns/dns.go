@@ -1,7 +1,6 @@
 package dns
 
 import (
-	
 	"net"
 )
 
@@ -13,12 +12,11 @@ func CheckDomain(domain string) []string {
 	}
 }
 
-func CheckIP(ip string) bool {
-	if _, err := net.LookupIP(ip); err != nil {
-		return false
-	} else {
-		return true
+// LookupIPReverse выполняет обратный DNS поиск и возвращает имена, связанные с IP
+func LookupIPReverse(ip string) []string {
+	hosts, err := net.LookupAddr(ip)
+	if err != nil {
+		return nil
 	}
+	return hosts
 }
-
-
