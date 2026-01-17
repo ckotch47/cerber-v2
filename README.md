@@ -38,9 +38,9 @@ cerber [command] [flags]
    - `-w, --worldlis`: Path to the wordlist file (required)
    - `-r, --recurse`: Enable recursive subdomain enumeration
 
-3. **find admin** - Search for admin panels
+3. **find path** - Search for hidden path 
    ```bash
-   cerber find admin example.com -w wordlist.txt [-e status_codes]
+   cerber find path example.com -w wordlist.txt [-e status_codes]
    ```
    Flags:
    - `-w, --worldlis`: Path to the wordlist file (required)
@@ -48,7 +48,7 @@ cerber [command] [flags]
    
    Example:
    ```bash
-   cerber find admin example.com -w paths.txt -e 404 -e 500
+   cerber find path example.com -w paths.txt -e 404 -e 500
    ```
 
 4. **version** - Show application version
