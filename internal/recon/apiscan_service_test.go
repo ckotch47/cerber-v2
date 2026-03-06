@@ -131,3 +131,60 @@ func TestScanSendsAuthHeaders(t *testing.T) {
 		t.Fatalf("expected 200, got %d", results[0].StatusCode)
 	}
 }
+
+func TestLoadSpecFromURLWithAuthHeaders(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer jwt-token" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"paths":{"/health":{"get":{}}}}`))
+	}))
+	defer server.Close()
+
+	scanner := NewAPIScanner(2, map[string]string{"Authorization": "Bearer jwt-token"})
+	spec, err := scanner.LoadSpec(server.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(spec.Paths) != 1 {
+		t.Fatalf("expected 1 path, got %d", len(spec.Paths))
+	}
+}
+
+func TestScanResultOrderIsDeterministic(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	spec := OpenAPISpec{
+		Paths: map[string]map[string]json.RawMessage{
+			"/zeta":  {"post": {}, "get": {}},
+			"/alpha": {"put": {}, "get": {}, "head": {}},
+		},
+	}
+	scanner := NewAPIScanner(2, nil)
+	results := scanner.Scan(server.URL, spec)
+	if len(results) != 4 {
+		t.Fatalf("expected 4 results, got %d", len(results))
+	}
+
+	got := []string{
+		results[0].Method + " " + results[0].Path,
+		results[1].Method + " " + results[1].Path,
+		results[2].Method + " " + results[2].Path,
+		results[3].Method + " " + results[3].Path,
+	}
+	want := []string{
+		"GET /alpha",
+		"PUT /alpha",
+		"GET /zeta",
+		"POST /zeta",
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("unexpected order: got=%v want=%v", got, want)
+	}
+}

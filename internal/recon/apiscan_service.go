@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -93,8 +94,21 @@ func (s *APIScanner) LoadSpec(specSource string) (OpenAPISpec, error) {
 
 func (s *APIScanner) Scan(baseURL string, spec OpenAPISpec) []APIScanResult {
 	results := make([]APIScanResult, 0)
-	for path, methods := range spec.Paths {
+	paths := make([]string, 0, len(spec.Paths))
+	for path := range spec.Paths {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+
+	for _, path := range paths {
+		methods := spec.Paths[path]
+		methodNames := make([]string, 0, len(methods))
 		for method := range methods {
+			methodNames = append(methodNames, method)
+		}
+		sort.Strings(methodNames)
+
+		for _, method := range methodNames {
 			if !isAllowedMethod(method) {
 				continue
 			}

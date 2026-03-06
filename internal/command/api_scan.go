@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -18,6 +19,7 @@ var (
 	apiJWT        string
 	apiKeyHeader  string
 	apiKey        string
+	apiShowErrors bool
 )
 
 var apiCmd = &cobra.Command{
@@ -80,6 +82,12 @@ func init() {
 		"",
 		"Значение API key",
 	)
+	apiScanCmd.Flags().BoolVar(
+		&apiShowErrors,
+		"show-errors",
+		true,
+		"Показывать ошибки сетевых запросов",
+	)
 	_ = apiScanCmd.MarkFlagRequired("spec")
 	_ = apiScanCmd.MarkFlagRequired("host")
 
@@ -90,6 +98,9 @@ func runAPIScan(_ *cobra.Command, _ []string) error {
 	host := recon.NormalizeBaseURL(apiHost)
 	if host == "" {
 		return fmt.Errorf("host пуст после нормализации")
+	}
+	if strings.TrimSpace(apiShow) != "" && strings.TrimSpace(apiExclude) != "" {
+		return fmt.Errorf("флаги --show и --exclude нельзя использовать одновременно")
 	}
 
 	showSet, err := recon.ParseStatusCodes(apiShow)
@@ -115,7 +126,9 @@ func runAPIScan(_ *cobra.Command, _ []string) error {
 	results := scanner.Scan(host, spec)
 	for _, result := range results {
 		if result.Err != nil {
-			fmt.Println(style.NotFoundStyle.Render(fmt.Sprintf("[%s] %s : error (%v)", result.Method, result.Path, result.Err)))
+			if apiShowErrors {
+				fmt.Println(style.NotFoundStyle.Render(fmt.Sprintf("[%s] %s : error (%v)", result.Method, result.Path, result.Err)))
+			}
 			continue
 		}
 		if !recon.ShouldIncludeStatus(result.StatusCode, showSet, excludeSet) {

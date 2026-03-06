@@ -68,7 +68,7 @@ cerber [command] [flags]
 
 6. **api scan** - Scan OpenAPI endpoints
    ```bash
-   cerber api scan --spec ./openapi.json --host https://api.example.com [--jwt TOKEN | --api-key-header X-API-Key --api-key VALUE] [--show 200,201] [--exclude 401,403]
+   cerber api scan --spec ./openapi.json --host https://api.example.com [--jwt TOKEN | --api-key-header X-API-Key --api-key VALUE] [--show 200,201 | --exclude 401,403]
    ```
    Flags:
    - `--spec`: Path or URL to `openapi.json` (required)
@@ -76,9 +76,16 @@ cerber [command] [flags]
    - `--jwt`: JWT token (`Authorization: Bearer ...`)
    - `--api-key-header`: API key header name
    - `--api-key`: API key value
-   - `--show`: Show only these status codes
-   - `--exclude`: Hide these status codes
+   - `--show`: Show only these status codes (mutually exclusive with `--exclude`)
+   - `--exclude`: Hide these status codes (mutually exclusive with `--show`)
+   - `--show-errors`: Print network/request errors (default: `true`)
    - `--request-timeout`: HTTP timeout per request in seconds (default: 10)
+
+   Examples:
+   ```bash
+   cerber api scan --spec https://api.example.com/openapi.json --host https://api.example.com --jwt <JWT> --show 200
+   cerber api scan --spec ./openapi.json --host https://api.example.com --api-key-header X-API-Key --api-key <KEY> --exclude 401,403
+   ```
 
 ## Examples
 
