@@ -27,11 +27,18 @@ var findPathCmd = &cobra.Command{
 func init() {
 	findPathCmd.Flags().StringVarP(
 		&commandPathFinder.WorldList,
-		"worldlis",
+		"wordlist",
 		"w",
 		"",
 		"Файл со списком",
 	)
+	findPathCmd.Flags().StringVar(
+		&commandPathFinder.WorldList,
+		"worldlis",
+		"",
+		"Устаревший алиас для --wordlist",
+	)
+	_ = findPathCmd.Flags().MarkDeprecated("worldlis", "use --wordlist instead")
 	findPathCmd.Flags().StringArrayVarP(
 		&commandPathFinder.Exclude,
 		"exclude",

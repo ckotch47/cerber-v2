@@ -21,11 +21,18 @@ var MaxDepth int = 2
 func init() {
 	findCmd.Flags().StringVarP(
 		&commandBruteForce.WorldList,
-		"worldlis",
+		"wordlist",
 		"w",
 		"",
 		"Файл со списком",
 	)
+	findCmd.Flags().StringVar(
+		&commandBruteForce.WorldList,
+		"worldlis",
+		"",
+		"Устаревший алиас для --wordlist",
+	)
+	_ = findCmd.Flags().MarkDeprecated("worldlis", "use --wordlist instead")
 	findCmd.Flags().BoolVarP(
 		&commandBruteForce.Recurse,
 		"recurse",

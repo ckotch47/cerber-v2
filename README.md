@@ -35,7 +35,7 @@ cerber [command] [flags]
    cerber find example.com -w wordlist.txt [-r]
    ```
    Flags:
-   - `-w, --worldlis`: Path to the wordlist file (required)
+   - `-w, --wordlist`: Path to the wordlist file (required)
    - `-r, --recurse`: Enable recursive subdomain enumeration
 
 3. **find path** - Search for hidden path 
@@ -43,7 +43,7 @@ cerber [command] [flags]
    cerber find path example.com -w wordlist.txt [-e status_codes]
    ```
    Flags:
-   - `-w, --worldlis`: Path to the wordlist file (required)
+   - `-w, --wordlist`: Path to the wordlist file (required)
    - `-e, --exclude`: Status codes to exclude from results (can be specified multiple times)
    
    Example:
@@ -75,7 +75,7 @@ cerber [command] [flags]
 
 4. Admin panel discovery (excluding 404 responses):
    ```bash
-   cerber find admin example.com -w admin-paths.txt -e 404
+   cerber find path example.com -w admin-paths.txt -e 404
    ```
 
 ## Wordlist Format

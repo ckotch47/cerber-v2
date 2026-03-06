@@ -10,17 +10,9 @@ import (
 
 // rootCmd — основная команда
 var rootCmd = &cobra.Command{
-	Use:   "cerber [domain]",
-	Short: "Краткое описание",
-	Long:  `Полное описание моего приложения`,
-	Args:  cobra.ExactArgs(1), // Ожидаем ровно один аргумент
-	Run: func(cmd *cobra.Command, args []string) {
-
-		lookupHostRun(cmd, args)
-
-		// Например, вызвать аналог find или lookup:
-		// processDomain(domain)
-	},
+	Use:   "cerber",
+	Short: "CLI для DNS recon и поиска скрытых путей",
+	Long:  `Cerber — инструмент для DNS lookup, поиска поддоменов и скрытых путей.`,
 }
 
 func init() {
