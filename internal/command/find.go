@@ -15,7 +15,7 @@ import (
 var findCmd = &cobra.Command{
 	Use:   "find",
 	Short: "Выполняет поиск поддоменов по списку из файла",
-	Run:   FindHost,
+	RunE:  FindHost,
 }
 
 var commandBruteForce utils.BruteForceType
@@ -57,21 +57,21 @@ func init() {
 	)
 }
 
-func FindHost(cmd *cobra.Command, args []string) {
+func FindHost(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		fmt.Println(style.NotFoundStyle.Render("Не указан домен"))
-		return
+		return fmt.Errorf("не указан домен")
 	}
 	if commandBruteForce.WorldList == "" {
-		fmt.Println(style.NotFoundStyle.Render("Файл со списком не найден"))
-		return
+		return fmt.Errorf("файл со списком не указан")
 	}
 
-	domain := cleanDomain(args[0])
+	domain, err := cleanDomain(args[0])
+	if err != nil {
+		return err
+	}
 	domainList := utils.ReadFile(commandBruteForce.WorldList)
 	if len(domainList) == 0 {
-		fmt.Println(style.NotFoundStyle.Render("Файл со списком пустой или не удалось прочитать"))
-		return
+		return fmt.Errorf("файл со списком пустой или не удалось прочитать")
 	}
 
 	found := collectSubDomains(
@@ -85,6 +85,7 @@ func FindHost(cmd *cobra.Command, args []string) {
 	for _, subdomain := range found {
 		fmt.Println(style.SuccessStyle.Render(subdomain))
 	}
+	return nil
 }
 
 func collectSubDomains(

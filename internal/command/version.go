@@ -9,9 +9,10 @@ import (
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Показать версию приложения",
-	Run:   getVersion,
+	RunE:  getVersion,
 }
 
-func getVersion(cmd *cobra.Command, args []string) {
+func getVersion(cmd *cobra.Command, args []string) error {
 	fmt.Println("Версия: v0.0.1a")
+	return nil
 }

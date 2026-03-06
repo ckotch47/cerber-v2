@@ -17,6 +17,8 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
+	rootCmd.SilenceUsage = true
+	rootCmd.SilenceErrors = true
 	rootCmd.AddCommand(versionCmd)
 
 	rootCmd.AddCommand(findCmd)
@@ -33,9 +35,9 @@ func Execute() {
 	}
 }
 
-func cleanDomain(searchDomain string) string {
-	if len(searchDomain) == 0 {
-		panic("not domain")
+func cleanDomain(searchDomain string) (string, error) {
+	if len(strings.TrimSpace(searchDomain)) == 0 {
+		return "", fmt.Errorf("домен не указан")
 	}
 	// Убираем "http://", "https://", "www."
 	searchDomain = strings.TrimPrefix(searchDomain, "http://")
@@ -45,5 +47,8 @@ func cleanDomain(searchDomain string) string {
 	if res := strings.HasPrefix(searchDomain, "www."); res {
 		searchDomain = searchDomain[4:]
 	}
-	return searchDomain
+	if searchDomain == "" {
+		return "", fmt.Errorf("домен пуст после нормализации")
+	}
+	return searchDomain, nil
 }

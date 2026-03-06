@@ -15,35 +15,38 @@ var LookCmd = &cobra.Command{
 	Use:   "look",
 	Short: "Найти IP по домену или доменные имена по IP",
 	Long:  "Примеры:\n  cerber look http://example.com — найти IP по домену\n  cerber look 8.8.8.8 — найти доменные имена по IP",
-	Run:   lookupHostRun,
+	RunE:  lookupHostRun,
 }
 
-func lookupHostRun(_ *cobra.Command, args []string) {
+func lookupHostRun(_ *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		fmt.Println("Введите домен или IP-адрес")
-		return
+		return fmt.Errorf("введите домен или IP-адрес")
 	}
 
-	host := cleanDomain(args[0])
+	host, err := cleanDomain(args[0])
+	if err != nil {
+		return err
+	}
 
 	// Проверяем, является ли аргумент IP-адресом
 	if net.ParseIP(host) != nil {
 		// Если это IP, выполняем обратный DNS-поиск
 		lookUpIP(host)
-		return
+		return nil
 	}
 
 	// Иначе считаем, что это домен, ищем IP
 	res := dns.CheckDomain(host)
 	if len(res) == 0 {
 		fmt.Println(style.NotFoundStyle.Render("Not found"))
-		return
+		return nil
 	}
 
 	for _, ip := range res {
 		fmt.Println(style.SuccessStyle.Render(ip))
 	}
 
+	return nil
 }
 
 func lookUpIP(ip string) {

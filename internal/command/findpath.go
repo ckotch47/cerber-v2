@@ -21,7 +21,7 @@ var findPathCmd = &cobra.Command{
 	Use:   "path",
 	Short: "Поиск админ панелей",
 	Long:  `Поиск админ панелей`,
-	Run:   FindHiddenPath,
+	RunE:  FindHiddenPath,
 }
 
 func init() {
@@ -61,24 +61,29 @@ func init() {
 	)
 }
 
-func FindHiddenPath(cmd *cobra.Command, args []string) {
+func FindHiddenPath(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		fmt.Println(style.NotFoundStyle.Render("Не указан домен"))
-		return
+		return fmt.Errorf("не указан домен")
 	}
 	if commandPathFinder.WorldList == "" {
-		fmt.Println(style.NotFoundStyle.Render("Файл со списком не найден"))
-		return
+		return fmt.Errorf("файл со списком не указан")
 	}
 	domain := normalizeBaseURL(args[0])
+	if domain == "" {
+		return fmt.Errorf("домен пуст после нормализации")
+	}
 	allowFallback := !hasHTTPPrefix(args[0])
 	worldList := utils.ReadFile(commandPathFinder.WorldList)
+	if len(worldList) == 0 {
+		return fmt.Errorf("файл со списком пустой или не удалось прочитать")
+	}
 	client := &http.Client{}
 	exclude := arrayToMap(commandPathFinder.Exclude)
 
 	for _, path := range worldList {
 		get(client, domain, path, allowFallback, exclude)
 	}
+	return nil
 }
 
 func get(client *http.Client, baseURL, path string, allowFallback bool, exclude StringSlice) {
