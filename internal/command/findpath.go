@@ -1,21 +1,17 @@
 package command
 
 import (
-	"cerber/internal/style"
-	"cerber/internal/utils"
-	"context"
 	"fmt"
-	"net/http"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
+
+	"cerber/internal/recon"
+	"cerber/internal/style"
+	"cerber/internal/utils"
 )
 
 var commandPathFinder utils.AdminFindeType
-
-type StringSlice map[string]bool
 
 var findPathCmd = &cobra.Command{
 	Use:   "path",
@@ -68,40 +64,39 @@ func FindHiddenPath(cmd *cobra.Command, args []string) error {
 	if commandPathFinder.WorldList == "" {
 		return fmt.Errorf("файл со списком не указан")
 	}
-	domain := normalizeBaseURL(args[0])
+
+	domain := recon.NormalizeBaseURL(args[0])
 	if domain == "" {
 		return fmt.Errorf("домен пуст после нормализации")
 	}
-	allowFallback := !hasHTTPPrefix(args[0])
 	worldList := utils.ReadFile(commandPathFinder.WorldList)
 	if len(worldList) == 0 {
 		return fmt.Errorf("файл со списком пустой или не удалось прочитать")
 	}
-	client := &http.Client{}
-	exclude := arrayToMap(commandPathFinder.Exclude)
 
-	for _, path := range worldList {
-		get(client, domain, path, allowFallback, exclude)
+	scanner := recon.NewPathScanner(
+		commandPathFinder.RequestTimeout,
+		commandPathFinder.Timeout,
+		commandPathFinder.Exclude,
+		!recon.HasHTTPPrefix(args[0]),
+	)
+	results := scanner.Scan(domain, worldList)
+
+	for _, result := range results {
+		if result.Err != nil {
+			fmt.Println("Ошибка запроса:", style.NotFoundStyle.Render(result.URL+" -> "+result.Err.Error()))
+			continue
+		}
+		printRespStatus(result.StatusCode, result.Path, scanner.IsExcluded(result.StatusCode))
 	}
+
 	return nil
 }
 
-func get(client *http.Client, baseURL, path string, allowFallback bool, exclude StringSlice) {
-	target := joinURL(baseURL, path)
-	resp, actualURL, err := requestWithFallback(client, target, commandPathFinder.RequestTimeout, allowFallback)
-	if err != nil {
-		fmt.Println("Ошибка запроса:", style.NotFoundStyle.Render(actualURL+" -> "+err.Error()))
-		return
-	}
-	defer resp.Body.Close()
-	printRespStatus(resp.StatusCode, path, exclude)
-	time.Sleep(time.Duration(commandPathFinder.Timeout) * time.Second)
-}
-
-func printRespStatus(statusCode int, path string, exclude StringSlice) {
+func printRespStatus(statusCode int, path string, excluded bool) {
 	var strResp string
 
-	if exclude[strconv.Itoa(statusCode)] {
+	if excluded {
 		return
 	}
 
@@ -111,70 +106,5 @@ func printRespStatus(statusCode int, path string, exclude StringSlice) {
 		strResp = path + " : " + style.SuccessStyle.Render(strconv.Itoa(statusCode))
 	}
 
-	fmt.Println(strResp) // выводим статус ответа
-}
-
-func arrayToMap(exclude []string) StringSlice {
-	if exclude == nil {
-		return StringSlice{}
-	}
-	res := make(StringSlice)
-
-	for _, code := range exclude {
-		if code != "" {
-			res[code] = true
-		}
-	}
-	return res
-}
-
-func normalizeBaseURL(input string) string {
-	trimmed := strings.TrimSpace(strings.TrimSuffix(input, "/"))
-	if trimmed == "" {
-		return ""
-	}
-	if hasHTTPPrefix(trimmed) {
-		return trimmed
-	}
-	return "https://" + trimmed
-}
-
-func hasHTTPPrefix(input string) bool {
-	return strings.HasPrefix(input, "http://") || strings.HasPrefix(input, "https://")
-}
-
-func joinURL(baseURL, path string) string {
-	return strings.TrimRight(baseURL, "/") + "/" + strings.TrimLeft(path, "/")
-}
-
-func requestWithFallback(client *http.Client, target string, timeoutSeconds int, allowFallback bool) (*http.Response, string, error) {
-	resp, err := requestOnce(client, target, timeoutSeconds)
-	if err == nil {
-		return resp, target, nil
-	}
-	if !allowFallback || !strings.HasPrefix(target, "https://") {
-		return nil, target, err
-	}
-
-	fallbackTarget := "http://" + strings.TrimPrefix(target, "https://")
-	fallbackResp, fallbackErr := requestOnce(client, fallbackTarget, timeoutSeconds)
-	if fallbackErr != nil {
-		return nil, fallbackTarget, fallbackErr
-	}
-	return fallbackResp, fallbackTarget, nil
-}
-
-func requestOnce(client *http.Client, target string, timeoutSeconds int) (*http.Response, error) {
-	reqTimeout := time.Duration(timeoutSeconds) * time.Second
-	if reqTimeout <= 0 {
-		reqTimeout = 10 * time.Second
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), reqTimeout)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
-	if err != nil {
-		return nil, err
-	}
-	return client.Do(req)
+	fmt.Println(strResp)
 }

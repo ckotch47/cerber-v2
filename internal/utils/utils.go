@@ -10,7 +10,6 @@ import (
 
 type BruteForceType struct {
 	WorldList   string
-	BruteForce  bool
 	Recurse     bool
 	MaxDepth    int
 	Concurrency int

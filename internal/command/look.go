@@ -59,10 +59,3 @@ func lookUpIP(ip string) {
 		fmt.Println(style.SuccessStyle.Render(domain))
 	}
 }
-
-func lookupHost(host string) string {
-	if res := dns.CheckDomain(host); len(res) > 0 {
-		return res[0]
-	}
-	return ""
-}

@@ -2,12 +2,10 @@ package command
 
 import (
 	"fmt"
-	"sort"
-	"strings"
-	"sync"
 
 	"github.com/spf13/cobra"
 
+	"cerber/internal/recon"
 	"cerber/internal/style"
 	"cerber/internal/utils"
 )
@@ -74,102 +72,16 @@ func FindHost(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("файл со списком пустой или не удалось прочитать")
 	}
 
-	found := collectSubDomains(
+	scanner := recon.NewSubdomainScanner(nil)
+	found := scanner.Collect(
 		domain,
 		domainList,
 		commandBruteForce.Recurse,
 		commandBruteForce.MaxDepth,
 		commandBruteForce.Concurrency,
-		hostExists,
 	)
 	for _, subdomain := range found {
 		fmt.Println(style.SuccessStyle.Render(subdomain))
 	}
 	return nil
-}
-
-func collectSubDomains(
-	rootDomain string,
-	wordlist []string,
-	recurse bool,
-	maxDepth int,
-	concurrency int,
-	resolver func(string) bool,
-) []string {
-	if maxDepth < 0 {
-		maxDepth = 0
-	}
-	if concurrency <= 0 {
-		concurrency = 1
-	}
-
-	visited := make(map[string]struct{})
-	foundSet := make(map[string]struct{})
-	found := make([]string, 0)
-	semaphore := make(chan struct{}, concurrency)
-
-	var scan func(domain string, depth int)
-	scan = func(domain string, depth int) {
-		if depth > maxDepth {
-			return
-		}
-
-		candidates := make([]string, 0, len(wordlist))
-		for _, prefix := range wordlist {
-			prefix = strings.TrimSpace(prefix)
-			if prefix == "" {
-				continue
-			}
-			fqdn := prefix + "." + domain
-			if _, ok := visited[fqdn]; ok {
-				continue
-			}
-			visited[fqdn] = struct{}{}
-			candidates = append(candidates, fqdn)
-		}
-
-		levelFound := make([]string, 0)
-		var wg sync.WaitGroup
-		results := make(chan string, len(candidates))
-
-		for _, fqdn := range candidates {
-			wg.Add(1)
-			go func(candidate string) {
-				defer wg.Done()
-				semaphore <- struct{}{}
-				ok := resolver(candidate)
-				<-semaphore
-				if ok {
-					results <- candidate
-				}
-			}(fqdn)
-		}
-
-		wg.Wait()
-		close(results)
-
-		for fqdn := range results {
-			if _, ok := foundSet[fqdn]; ok {
-				continue
-			}
-			foundSet[fqdn] = struct{}{}
-			found = append(found, fqdn)
-			levelFound = append(levelFound, fqdn)
-		}
-
-		if !recurse || depth >= maxDepth {
-			return
-		}
-		for _, sub := range levelFound {
-			scan(sub, depth+1)
-		}
-	}
-
-	scan(rootDomain, 0)
-	sort.Strings(found)
-	return found
-}
-
-var hostExists = func(host string) bool {
-	return len(lookupHost(host)) > 0
 }
