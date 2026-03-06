@@ -40,11 +40,12 @@ cerber [command] [flags]
 
 3. **find path** - Search for hidden path 
    ```bash
-   cerber find path example.com -w wordlist.txt [-e status_codes]
+   cerber find path example.com -w wordlist.txt [-e status_codes] [--request-timeout seconds]
    ```
    Flags:
    - `-w, --wordlist`: Path to the wordlist file (required)
    - `-e, --exclude`: Status codes to exclude from results (can be specified multiple times)
+   - `--request-timeout`: HTTP timeout per request in seconds (default: 10)
    
    Example:
    ```bash

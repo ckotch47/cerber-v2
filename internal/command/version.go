@@ -9,7 +9,7 @@ import (
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Показать версию приложения",
-	Run: getVersion,
+	Run:   getVersion,
 }
 
 func getVersion(cmd *cobra.Command, args []string) {

@@ -42,4 +42,12 @@ func TestFindPathCommandWordlistFlags(t *testing.T) {
 	if legacy.Deprecated == "" {
 		t.Fatalf("expected --worldlis to be marked deprecated")
 	}
+
+	reqTimeout := findPathCmd.Flags().Lookup("request-timeout")
+	if reqTimeout == nil {
+		t.Fatalf("expected --request-timeout flag to be present")
+	}
+	if reqTimeout.Shorthand != "" {
+		t.Fatalf("expected --request-timeout to have no shorthand, got %q", reqTimeout.Shorthand)
+	}
 }

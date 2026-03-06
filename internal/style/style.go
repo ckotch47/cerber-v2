@@ -22,4 +22,3 @@ var NotFoundStyle = lipgloss.NewStyle().
 
 var SuccessStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#4CAF50")) // Зеленый (Dracula)
-	

@@ -9,15 +9,16 @@ import (
 )
 
 type BruteForceType struct {
-	WorldList string
+	WorldList  string
 	BruteForce bool
-	Recurse bool
+	Recurse    bool
 }
 
 type AdminFindeType struct {
-	WorldList string
-	Exclude []string
-	Timeout int
+	WorldList      string
+	Exclude        []string
+	Timeout        int
+	RequestTimeout int
 }
 
 func ReadFile(path string) []string {
@@ -26,7 +27,7 @@ func ReadFile(path string) []string {
 		fmt.Println(err)
 		return nil
 	}
-	return line	
+	return line
 }
 
 func readLines(filename string) ([]string, error) {
