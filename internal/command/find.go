@@ -3,6 +3,8 @@ package command
 import (
 	"fmt"
 
+	"cerber/internal/i18n"
+
 	"github.com/spf13/cobra"
 
 	"cerber/internal/recon"
@@ -12,7 +14,7 @@ import (
 
 var findCmd = &cobra.Command{
 	Use:   "find",
-	Short: "Выполняет поиск поддоменов по списку из файла",
+	Short: i18n.T("cmd_short_find"),
 	RunE:  FindHost,
 }
 
@@ -57,10 +59,10 @@ func init() {
 
 func FindHost(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("не указан домен")
+		return fmt.Errorf(i18n.T("err_domain_required"))
 	}
 	if commandBruteForce.WorldList == "" {
-		return fmt.Errorf("файл со списком не указан")
+		return fmt.Errorf(i18n.T("err_wordlist_required"))
 	}
 
 	domain, err := cleanDomain(args[0])
@@ -69,7 +71,7 @@ func FindHost(cmd *cobra.Command, args []string) error {
 	}
 	domainList, err := utils.ReadFile(commandBruteForce.WorldList)
 	if err != nil {
-		return fmt.Errorf("не удалось прочитать wordlist: %w", err)
+		return fmt.Errorf(i18n.T("err_read_wordlist"), err)
 	}
 
 	scanner := recon.NewSubdomainScanner(nil)

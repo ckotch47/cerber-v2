@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strings"
 
+	"cerber/internal/i18n"
+
 	"os"
 )
 
@@ -28,7 +30,7 @@ func ReadFile(path string) ([]string, error) {
 		return nil, err
 	}
 	if len(line) == 0 {
-		return nil, errors.New("файл пустой")
+		return nil, errors.New(i18n.T("err_file_empty"))
 	}
 	return line, nil
 }

@@ -5,6 +5,8 @@ import (
 	"net"
 	"strings"
 
+	"cerber/internal/i18n"
+
 	"github.com/spf13/cobra"
 
 	"cerber/internal/dns"
@@ -13,14 +15,14 @@ import (
 
 var LookCmd = &cobra.Command{
 	Use:   "look",
-	Short: "Найти IP по домену или доменные имена по IP",
+	Short: i18n.T("cmd_short_look"),
 	Long:  "Примеры:\n  cerber look http://example.com — найти IP по домену\n  cerber look 8.8.8.8 — найти доменные имена по IP",
 	RunE:  lookupHostRun,
 }
 
 func lookupHostRun(_ *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("введите домен или IP-адрес")
+		return fmt.Errorf(i18n.T("err_input_domain_or_ip"))
 	}
 
 	host, err := cleanDomain(args[0])
@@ -38,7 +40,7 @@ func lookupHostRun(_ *cobra.Command, args []string) error {
 	// Иначе считаем, что это домен, ищем IP
 	res := dns.CheckDomain(host)
 	if len(res) == 0 {
-		fmt.Println(style.NotFoundStyle.Render("Не найдено"))
+		fmt.Println(style.NotFoundStyle.Render(i18n.T("msg_not_found")))
 		return nil
 	}
 
@@ -52,7 +54,7 @@ func lookupHostRun(_ *cobra.Command, args []string) error {
 func lookUpIP(ip string) {
 	res := dns.LookupIPReverse(ip)
 	if len(res) == 0 {
-		fmt.Println(style.NotFoundStyle.Render("Не найдено"))
+		fmt.Println(style.NotFoundStyle.Render(i18n.T("msg_not_found")))
 	}
 	for _, domain := range res {
 		domain = strings.TrimSuffix(domain, ".") // Убираем точку в конце, если есть

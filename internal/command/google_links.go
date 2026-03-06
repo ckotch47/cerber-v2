@@ -3,6 +3,8 @@ package command
 import (
 	"fmt"
 
+	"cerber/internal/i18n"
+
 	"github.com/spf13/cobra"
 
 	"cerber/internal/recon"
@@ -13,7 +15,7 @@ var googleMode string
 
 var googleCmd = &cobra.Command{
 	Use:   "google",
-	Short: "Инструменты для генерации Google dork ссылок",
+	Short: i18n.T("cmd_short_google"),
 }
 
 var googleLinksCmd = &cobra.Command{

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"cerber/internal/i18n"
 )
 
 type GoogleLinksService struct {
@@ -66,10 +68,10 @@ func (s *GoogleLinksService) parseModes(modeSpec string) ([]int, error) {
 		part = strings.TrimSpace(part)
 		mode, err := strconv.Atoi(part)
 		if err != nil {
-			return nil, fmt.Errorf("невалидный mode %q: ожидается число или all", part)
+			return nil, fmt.Errorf(i18n.T("err_invalid_google_mode"), part)
 		}
 		if mode < 1 || mode > len(s.templates) {
-			return nil, fmt.Errorf("mode %d вне диапазона 1..%d", mode, len(s.templates))
+			return nil, fmt.Errorf(i18n.T("err_google_mode_out_of_range"), mode, len(s.templates))
 		}
 		if _, ok := seen[mode]; ok {
 			continue

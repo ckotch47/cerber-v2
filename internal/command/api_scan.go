@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"cerber/internal/i18n"
+
 	"github.com/spf13/cobra"
 
 	"cerber/internal/recon"
@@ -25,7 +27,7 @@ var (
 
 var apiCmd = &cobra.Command{
 	Use:   "api",
-	Short: "Инструменты сканирования API",
+	Short: i18n.T("cmd_short_api"),
 }
 
 var apiScanCmd = &cobra.Command{
@@ -104,19 +106,19 @@ func init() {
 func runAPIScan(_ *cobra.Command, _ []string) error {
 	host := recon.NormalizeBaseURL(apiHost)
 	if host == "" {
-		return fmt.Errorf("host пуст после нормализации")
+		return fmt.Errorf(i18n.T("err_host_empty_after_normalize"))
 	}
 	if strings.TrimSpace(apiShow) != "" && strings.TrimSpace(apiExclude) != "" {
-		return fmt.Errorf("флаги --show и --exclude нельзя использовать одновременно")
+		return fmt.Errorf(i18n.T("err_show_exclude_mutually_exclusive"))
 	}
 
 	showSet, err := recon.ParseStatusCodes(apiShow)
 	if err != nil {
-		return fmt.Errorf("невалидный --show: %w", err)
+		return fmt.Errorf(i18n.T("err_invalid_show"), err)
 	}
 	excludeSet, err := recon.ParseStatusCodes(apiExclude)
 	if err != nil {
-		return fmt.Errorf("невалидный --exclude: %w", err)
+		return fmt.Errorf(i18n.T("err_invalid_exclude"), err)
 	}
 
 	headers, err := recon.BuildAuthHeaders(apiJWT, apiKeyHeader, apiKey)

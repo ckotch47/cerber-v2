@@ -5,20 +5,28 @@ import (
 	"os"
 	"strings"
 
+	"cerber/internal/i18n"
+
 	"github.com/spf13/cobra"
 )
 
 // rootCmd — основная команда
 var rootCmd = &cobra.Command{
 	Use:   "cerber",
-	Short: "CLI для DNS recon и поиска скрытых путей",
-	Long:  `Cerber — инструмент для DNS lookup, поиска поддоменов и скрытых путей.`,
+	Short: i18n.T("cmd_short_root"),
+	Long:  i18n.T("cmd_long_root"),
 }
+
+var cliLang string
 
 func init() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.SilenceUsage = true
 	rootCmd.SilenceErrors = true
+	rootCmd.PersistentFlags().StringVar(&cliLang, "lang", "auto", i18n.T("lang_flag_desc"))
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		return i18n.SetLang(cliLang)
+	}
 	rootCmd.AddCommand(versionCmd)
 
 	rootCmd.AddCommand(findCmd)
@@ -39,7 +47,7 @@ func Execute() {
 
 func cleanDomain(searchDomain string) (string, error) {
 	if len(strings.TrimSpace(searchDomain)) == 0 {
-		return "", fmt.Errorf("домен не указан")
+		return "", fmt.Errorf(i18n.T("err_domain_required"))
 	}
 	searchDomain = strings.TrimSpace(searchDomain)
 	// Убираем "http://", "https://", "www." без учета регистра
@@ -49,7 +57,7 @@ func cleanDomain(searchDomain string) (string, error) {
 
 	searchDomain = trimPrefixFold(searchDomain, "www.")
 	if searchDomain == "" {
-		return "", fmt.Errorf("домен пуст после нормализации")
+		return "", fmt.Errorf(i18n.T("err_domain_empty_after_normalize"))
 	}
 	return searchDomain, nil
 }

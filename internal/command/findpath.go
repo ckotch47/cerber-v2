@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"cerber/internal/i18n"
+
 	"github.com/spf13/cobra"
 
 	"cerber/internal/recon"
@@ -15,8 +17,8 @@ var commandPathFinder utils.AdminFindeType
 
 var findPathCmd = &cobra.Command{
 	Use:   "path",
-	Short: "Поиск админ панелей",
-	Long:  `Поиск админ панелей`,
+	Short: i18n.T("cmd_short_find_path"),
+	Long:  i18n.T("cmd_short_find_path"),
 	RunE:  FindHiddenPath,
 }
 
@@ -59,19 +61,19 @@ func init() {
 
 func FindHiddenPath(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("не указан домен")
+		return fmt.Errorf(i18n.T("err_domain_required"))
 	}
 	if commandPathFinder.WorldList == "" {
-		return fmt.Errorf("файл со списком не указан")
+		return fmt.Errorf(i18n.T("err_wordlist_required"))
 	}
 
 	domain := recon.NormalizeBaseURL(args[0])
 	if domain == "" {
-		return fmt.Errorf("домен пуст после нормализации")
+		return fmt.Errorf(i18n.T("err_domain_empty_after_normalize"))
 	}
 	worldList, err := utils.ReadFile(commandPathFinder.WorldList)
 	if err != nil {
-		return fmt.Errorf("не удалось прочитать wordlist: %w", err)
+		return fmt.Errorf(i18n.T("err_read_wordlist"), err)
 	}
 
 	scanner := recon.NewPathScanner(
@@ -84,7 +86,7 @@ func FindHiddenPath(cmd *cobra.Command, args []string) error {
 
 	for _, result := range results {
 		if result.Err != nil {
-			fmt.Println("Ошибка запроса:", style.NotFoundStyle.Render(result.URL+" -> "+result.Err.Error()))
+			fmt.Println(i18n.T("msg_request_error_prefix"), style.NotFoundStyle.Render(result.URL+" -> "+result.Err.Error()))
 			continue
 		}
 		printRespStatus(result.StatusCode, result.Path, scanner.IsExcluded(result.StatusCode))

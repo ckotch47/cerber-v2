@@ -23,6 +23,9 @@ go install
 cerber [command] [flags]
 ```
 
+Global flag:
+- `--lang auto|ru|en` — language for runtime messages (default: `auto`, detected from system locale)
+
 ### Available Commands
 
 1. **look** - Find IP addresses for a domain

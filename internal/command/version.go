@@ -3,16 +3,18 @@ package command
 import (
 	"fmt"
 
+	"cerber/internal/i18n"
+
 	"github.com/spf13/cobra"
 )
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Показать версию приложения",
+	Short: i18n.T("cmd_short_version"),
 	RunE:  getVersion,
 }
 
 func getVersion(cmd *cobra.Command, args []string) error {
-	fmt.Println("Версия: v0.0.1")
+	fmt.Println(i18n.T("msg_version"))
 	return nil
 }

@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"cerber/internal/i18n"
 )
 
 var allowedHTTPMethods = []string{"get", "post", "put", "patch", "delete"}
@@ -65,10 +67,10 @@ func BuildAuthHeaders(jwt string, apiKeyHeader string, apiKey string) (map[strin
 	apiKeyHeader = strings.TrimSpace(apiKeyHeader)
 	apiKey = strings.TrimSpace(apiKey)
 	if apiKey != "" && apiKeyHeader == "" {
-		return nil, fmt.Errorf("для --api-key требуется --api-key-header")
+		return nil, fmt.Errorf(i18n.T("err_api_key_requires_header"))
 	}
 	if apiKey == "" && apiKeyHeader != "" {
-		return nil, fmt.Errorf("для --api-key-header требуется --api-key")
+		return nil, fmt.Errorf(i18n.T("err_api_key_header_requires_key"))
 	}
 	if apiKey != "" && apiKeyHeader != "" {
 		headers[apiKeyHeader] = apiKey
@@ -91,10 +93,10 @@ func (s *APIScanner) LoadSpec(specSource string) (OpenAPISpec, error) {
 
 	var spec OpenAPISpec
 	if err := json.Unmarshal(data, &spec); err != nil {
-		return OpenAPISpec{}, fmt.Errorf("невалидный openapi json: %w", err)
+		return OpenAPISpec{}, fmt.Errorf(i18n.T("err_invalid_openapi_json"), err)
 	}
 	if len(spec.Paths) == 0 {
-		return OpenAPISpec{}, fmt.Errorf("в спецификации отсутствует paths")
+		return OpenAPISpec{}, fmt.Errorf(i18n.T("err_openapi_paths_missing"))
 	}
 	return spec, nil
 }
@@ -141,10 +143,10 @@ func ParseStatusCodes(value string) (map[int]bool, error) {
 		part = strings.TrimSpace(part)
 		code, err := strconv.Atoi(part)
 		if err != nil {
-			return nil, fmt.Errorf("невалидный статус-код %q", part)
+			return nil, fmt.Errorf(i18n.T("err_invalid_status_code"), part)
 		}
 		if code < 100 || code > 999 {
-			return nil, fmt.Errorf("статус-код вне диапазона 100..999: %d", code)
+			return nil, fmt.Errorf(i18n.T("err_status_code_out_of_range"), code)
 		}
 		set[code] = true
 	}
@@ -212,7 +214,7 @@ func (s *APIScanner) readFromURL(source string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("не удалось загрузить спецификацию: status %d", resp.StatusCode)
+		return nil, fmt.Errorf(i18n.T("err_spec_load_status"), resp.StatusCode)
 	}
 	return io.ReadAll(resp.Body)
 }
