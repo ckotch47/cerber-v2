@@ -25,6 +25,7 @@ func init() {
 	findCmd.AddCommand(findPathCmd)
 
 	rootCmd.AddCommand(LookCmd)
+	rootCmd.AddCommand(googleCmd)
 }
 
 // Execute запускает root команду

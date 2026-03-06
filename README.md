@@ -59,6 +59,13 @@ cerber [command] [flags]
    cerber version
    ```
 
+5. **google links** - Generate Google dork links
+   ```bash
+   cerber google links example.com [--mode all|1,5,12]
+   ```
+   Flags:
+   - `--mode`: Modes list (comma-separated) or `all` (default: `all`)
+
 ## Examples
 
 1. Basic DNS lookup:
