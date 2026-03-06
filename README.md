@@ -125,6 +125,12 @@ The tool automatically handles various domain formats:
 
 Current version: v0.0.1a
 
+Release docs:
+- `MVP_CHECKLIST.md`
+- `CHANGELOG_MIGRATION.md`
+- `VERSIONING.md`
+- `RELEASE_CHECKLIST.md`
+
 ## License
 
 [Add your license information here]
