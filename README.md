@@ -76,6 +76,7 @@ cerber [command] [flags]
    - `--jwt`: JWT token (`Authorization: Bearer ...`)
    - `--api-key-header`: API key header name
    - `--api-key`: API key value
+   - `--spec-auth`: Send auth headers while fetching `--spec` URL (default: `true`)
    - `--show`: Show only these status codes (mutually exclusive with `--exclude`)
    - `--exclude`: Hide these status codes (mutually exclusive with `--show`)
    - `--show-errors`: Print network/request errors (default: `true`)

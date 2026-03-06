@@ -13,7 +13,7 @@ var googleMode string
 
 var googleCmd = &cobra.Command{
 	Use:   "google",
-	Short: "Google dork helpers",
+	Short: "Инструменты для генерации Google dork ссылок",
 }
 
 var googleLinksCmd = &cobra.Command{

@@ -66,6 +66,14 @@ func TestCleanDomain(t *testing.T) {
 	if got != "example.com" {
 		t.Fatalf("cleanDomain() = %q, want %q", got, "example.com")
 	}
+
+	gotUpper, err := cleanDomain("HTTPS://WWW.Example.com/")
+	if err != nil {
+		t.Fatalf("unexpected error for uppercase prefix: %v", err)
+	}
+	if gotUpper != "Example.com" {
+		t.Fatalf("cleanDomain() uppercase = %q, want %q", gotUpper, "Example.com")
+	}
 }
 
 func TestCleanDomainReturnsErrorOnEmptyInput(t *testing.T) {

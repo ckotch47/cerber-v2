@@ -32,7 +32,7 @@ func TestShouldIncludeStatus(t *testing.T) {
 }
 
 func TestLoadSpecFromFile(t *testing.T) {
-	scanner := NewAPIScanner(1, nil)
+	scanner := NewAPIScanner(1, nil, nil)
 	dir := t.TempDir()
 	specPath := filepath.Join(dir, "openapi.json")
 	data := `{"paths":{"/health":{"get":{}}}}`
@@ -59,6 +59,10 @@ func TestScanAgainstHTTPServer(t *testing.T) {
 			}
 		case "/items":
 			if r.Method == http.MethodPost {
+				if r.Header.Get("Content-Type") != "application/json" {
+					w.WriteHeader(http.StatusUnsupportedMediaType)
+					return
+				}
 				w.WriteHeader(http.StatusCreated)
 				return
 			}
@@ -73,7 +77,7 @@ func TestScanAgainstHTTPServer(t *testing.T) {
 			"/items":  {"post": {}, "head": {}},
 		},
 	}
-	scanner := NewAPIScanner(2, nil)
+	scanner := NewAPIScanner(2, nil, nil)
 	results := scanner.Scan(server.URL, spec)
 	if len(results) != 2 {
 		t.Fatalf("expected 2 results for allowed methods, got %d", len(results))
@@ -122,7 +126,7 @@ func TestScanSendsAuthHeaders(t *testing.T) {
 		"Authorization": "Bearer jwt-token",
 		"X-API-Key":     "secret",
 	}
-	scanner := NewAPIScanner(2, headers)
+	scanner := NewAPIScanner(2, headers, nil)
 	results := scanner.Scan(server.URL, spec)
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -144,7 +148,11 @@ func TestLoadSpecFromURLWithAuthHeaders(t *testing.T) {
 	}))
 	defer server.Close()
 
-	scanner := NewAPIScanner(2, map[string]string{"Authorization": "Bearer jwt-token"})
+	scanner := NewAPIScanner(
+		2,
+		nil,
+		map[string]string{"Authorization": "Bearer jwt-token"},
+	)
 	spec, err := scanner.LoadSpec(server.URL)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -166,7 +174,7 @@ func TestScanResultOrderIsDeterministic(t *testing.T) {
 			"/alpha": {"put": {}, "get": {}, "head": {}},
 		},
 	}
-	scanner := NewAPIScanner(2, nil)
+	scanner := NewAPIScanner(2, nil, nil)
 	results := scanner.Scan(server.URL, spec)
 	if len(results) != 4 {
 		t.Fatalf("expected 4 results, got %d", len(results))
@@ -186,5 +194,27 @@ func TestScanResultOrderIsDeterministic(t *testing.T) {
 	}
 	if !slices.Equal(got, want) {
 		t.Fatalf("unexpected order: got=%v want=%v", got, want)
+	}
+}
+
+func TestLoadSpecFromURLWithoutSpecHeaders(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "" {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"paths":{"/health":{"get":{}}}}`))
+	}))
+	defer server.Close()
+
+	scanner := NewAPIScanner(2, map[string]string{"Authorization": "Bearer jwt-token"}, nil)
+	spec, err := scanner.LoadSpec(server.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(spec.Paths) != 1 {
+		t.Fatalf("expected 1 path, got %d", len(spec.Paths))
 	}
 }

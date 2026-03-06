@@ -19,12 +19,13 @@ var (
 	apiJWT        string
 	apiKeyHeader  string
 	apiKey        string
+	apiSpecAuth   bool
 	apiShowErrors bool
 )
 
 var apiCmd = &cobra.Command{
 	Use:   "api",
-	Short: "API scanning tools",
+	Short: "Инструменты сканирования API",
 }
 
 var apiScanCmd = &cobra.Command{
@@ -83,6 +84,12 @@ func init() {
 		"Значение API key",
 	)
 	apiScanCmd.Flags().BoolVar(
+		&apiSpecAuth,
+		"spec-auth",
+		true,
+		"Передавать auth-заголовки при загрузке --spec по URL",
+	)
+	apiScanCmd.Flags().BoolVar(
 		&apiShowErrors,
 		"show-errors",
 		true,
@@ -117,7 +124,11 @@ func runAPIScan(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	scanner := recon.NewAPIScanner(apiTimeout, headers)
+	var specHeaders map[string]string
+	if apiSpecAuth {
+		specHeaders = headers
+	}
+	scanner := recon.NewAPIScanner(apiTimeout, headers, specHeaders)
 	spec, err := scanner.LoadSpec(apiSpecSource)
 	if err != nil {
 		return err

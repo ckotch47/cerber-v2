@@ -1,6 +1,7 @@
 package recon
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -30,22 +31,28 @@ type APIScanResult struct {
 type APIScanner struct {
 	client         *http.Client
 	requestTimeout time.Duration
-	headers        map[string]string
+	scanHeaders    map[string]string
+	specHeaders    map[string]string
 }
 
-func NewAPIScanner(requestTimeoutSec int, headers map[string]string) *APIScanner {
+func NewAPIScanner(requestTimeoutSec int, scanHeaders map[string]string, specHeaders map[string]string) *APIScanner {
 	reqTimeout := time.Duration(requestTimeoutSec) * time.Second
 	if reqTimeout <= 0 {
 		reqTimeout = 10 * time.Second
 	}
-	h := make(map[string]string, len(headers))
-	for k, v := range headers {
-		h[k] = v
+	hScan := make(map[string]string, len(scanHeaders))
+	for k, v := range scanHeaders {
+		hScan[k] = v
+	}
+	hSpec := make(map[string]string, len(specHeaders))
+	for k, v := range specHeaders {
+		hSpec[k] = v
 	}
 	return &APIScanner{
 		client:         &http.Client{},
 		requestTimeout: reqTimeout,
-		headers:        h,
+		scanHeaders:    hScan,
+		specHeaders:    hSpec,
 	}
 }
 
@@ -162,11 +169,20 @@ func (s *APIScanner) request(method string, target string) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), s.requestTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, strings.ToUpper(method), target, nil)
+	httpMethod := strings.ToUpper(method)
+	var body io.Reader
+	if isWriteMethod(httpMethod) {
+		body = bytes.NewBufferString("{}")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, httpMethod, target, body)
 	if err != nil {
 		return 0, err
 	}
-	for k, v := range s.headers {
+	if isWriteMethod(httpMethod) {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	for k, v := range s.scanHeaders {
 		req.Header.Set(k, v)
 	}
 	resp, err := s.client.Do(req)
@@ -186,7 +202,7 @@ func (s *APIScanner) readFromURL(source string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range s.headers {
+	for k, v := range s.specHeaders {
 		req.Header.Set(k, v)
 	}
 	resp, err := s.client.Do(req)
@@ -199,4 +215,13 @@ func (s *APIScanner) readFromURL(source string) ([]byte, error) {
 		return nil, fmt.Errorf("не удалось загрузить спецификацию: status %d", resp.StatusCode)
 	}
 	return io.ReadAll(resp.Body)
+}
+
+func isWriteMethod(method string) bool {
+	switch method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+		return true
+	default:
+		return false
+	}
 }

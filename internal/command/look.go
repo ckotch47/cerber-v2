@@ -38,7 +38,7 @@ func lookupHostRun(_ *cobra.Command, args []string) error {
 	// Иначе считаем, что это домен, ищем IP
 	res := dns.CheckDomain(host)
 	if len(res) == 0 {
-		fmt.Println(style.NotFoundStyle.Render("Not found"))
+		fmt.Println(style.NotFoundStyle.Render("Не найдено"))
 		return nil
 	}
 
@@ -52,7 +52,7 @@ func lookupHostRun(_ *cobra.Command, args []string) error {
 func lookUpIP(ip string) {
 	res := dns.LookupIPReverse(ip)
 	if len(res) == 0 {
-		fmt.Println(style.NotFoundStyle.Render("Not found"))
+		fmt.Println(style.NotFoundStyle.Render("Не найдено"))
 	}
 	for _, domain := range res {
 		domain = strings.TrimSuffix(domain, ".") // Убираем точку в конце, если есть

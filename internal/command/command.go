@@ -41,16 +41,25 @@ func cleanDomain(searchDomain string) (string, error) {
 	if len(strings.TrimSpace(searchDomain)) == 0 {
 		return "", fmt.Errorf("домен не указан")
 	}
-	// Убираем "http://", "https://", "www."
-	searchDomain = strings.TrimPrefix(searchDomain, "http://")
-	searchDomain = strings.TrimPrefix(searchDomain, "https://")
+	searchDomain = strings.TrimSpace(searchDomain)
+	// Убираем "http://", "https://", "www." без учета регистра
+	searchDomain = trimPrefixFold(searchDomain, "http://")
+	searchDomain = trimPrefixFold(searchDomain, "https://")
 	searchDomain = strings.TrimSuffix(searchDomain, "/")
 
-	if res := strings.HasPrefix(searchDomain, "www."); res {
-		searchDomain = searchDomain[4:]
-	}
+	searchDomain = trimPrefixFold(searchDomain, "www.")
 	if searchDomain == "" {
 		return "", fmt.Errorf("домен пуст после нормализации")
 	}
 	return searchDomain, nil
+}
+
+func trimPrefixFold(s, prefix string) string {
+	if len(s) < len(prefix) {
+		return s
+	}
+	if strings.EqualFold(s[:len(prefix)], prefix) {
+		return s[len(prefix):]
+	}
+	return s
 }
