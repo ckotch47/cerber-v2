@@ -1,140 +1,48 @@
 # Cerber
 
-Cerber is a command-line tool for domain reconnaissance and admin panel discovery. It provides functionality for subdomain enumeration, DNS lookups, and admin panel scanning.
+Cerber is a CLI tool for recon tasks: DNS lookup, subdomain discovery, hidden path scan, Google dork links, and OpenAPI endpoint availability checks.
 
-## Features
-
-- Subdomain enumeration with recursive scanning
-- DNS lookup for domain resolution
-- Admin panel discovery with customizable status code filtering
-- Support for wordlist-based scanning
-
-## Installation
+## Quick Start
 
 ```bash
-go install
-```
-
-## Usage
-
-### Basic Commands
-
-```bash
-cerber [command] [flags]
+cd /Users/blant/GoLangProject/lessons/cerber
+go build -o /Users/blant/go/bin/cerber .
+cerber version
 ```
 
 Global flag:
-- `--lang auto|ru|en` — language for runtime messages (default: `auto`, detected from system locale)
+- `--lang auto|ru|en` (default: `auto`)
 
-### Available Commands
+## Main Commands
 
-1. **look** - Find IP addresses for a domain
-   ```bash
-   cerber look example.com
-   ```
+```bash
+cerber look <domain-or-ip>
+cerber find <domain> -w <wordlist> [-r] [--max-depth N] [-c N]
+cerber find path <host-or-url> -w <wordlist> [-e CODE] [-t SEC] [--request-timeout SEC]
+cerber google links <domain> [--mode all|1,5,12]
+cerber api scan --spec <url-or-file> --host <base-url> [--jwt TOKEN | --api-key-header H --api-key V]
+```
 
-2. **find** - Perform subdomain enumeration
-   ```bash
-   cerber find example.com -w wordlist.txt [-r] [--max-depth N] [-c N]
-   ```
-   Flags:
-   - `-w, --wordlist`: Path to the wordlist file (required)
-   - `-r, --recurse`: Enable recursive subdomain enumeration
-   - `--max-depth`: Max recursion depth for recursive mode (default: 2)
-   - `-c, --concurrency`: Number of parallel DNS lookups (default: 20)
+## Full Docs (Wiki)
 
-3. **find path** - Search for hidden path 
-   ```bash
-   cerber find path example.com -w wordlist.txt [-e status_codes] [--request-timeout seconds]
-   ```
-   Flags:
-   - `-w, --wordlist`: Path to the wordlist file (required)
-   - `-e, --exclude`: Status codes to exclude from results (can be specified multiple times)
-   - `--request-timeout`: HTTP timeout per request in seconds (default: 10)
-   
-   Example:
-   ```bash
-   cerber find path example.com -w paths.txt -e 404 -e 500
-   ```
-
-4. **version** - Show application version
-   ```bash
-   cerber version
-   ```
-
-5. **google links** - Generate Google dork links
-   ```bash
-   cerber google links example.com [--mode all|1,5,12]
-   ```
-   Flags:
-   - `--mode`: Modes list (comma-separated) or `all` (default: `all`)
-
-6. **api scan** - Scan OpenAPI endpoints
-   ```bash
-   cerber api scan --spec ./openapi.json --host https://api.example.com [--jwt TOKEN | --api-key-header X-API-Key --api-key VALUE] [--show 200,201 | --exclude 401,403]
-   ```
-   Flags:
-   - `--spec`: Path or URL to `openapi.json` (required)
-   - `--host`: Base API URL for requests (required)
-   - `--jwt`: JWT token (`Authorization: Bearer ...`)
-   - `--api-key-header`: API key header name
-   - `--api-key`: API key value
-   - `--spec-auth`: Send auth headers while fetching `--spec` URL (default: `true`)
-   - `--show`: Show only these status codes (mutually exclusive with `--exclude`)
-   - `--exclude`: Hide these status codes (mutually exclusive with `--show`)
-   - `--show-errors`: Print network/request errors (default: `true`)
-   - `--request-timeout`: HTTP timeout per request in seconds (default: 10)
-
-   Examples:
-   ```bash
-   cerber api scan --spec https://api.example.com/openapi.json --host https://api.example.com --jwt <JWT> --show 200
-   cerber api scan --spec ./openapi.json --host https://api.example.com --api-key-header X-API-Key --api-key <KEY> --exclude 401,403
-   ```
-
-## Examples
-
-1. Basic DNS lookup:
-   ```bash
-   cerber look example.com
-   ```
-
-2. Subdomain enumeration:
-   ```bash
-   cerber find example.com -w subdomains.txt
-   ```
-
-3. Recursive subdomain scanning:
-   ```bash
-   cerber find example.com -w subdomains.txt -r
-   ```
-
-4. Admin panel discovery (excluding 404 responses):
-   ```bash
-   cerber find path example.com -w admin-paths.txt -e 404
-   ```
-
-## Wordlist Format
-
-- For subdomain enumeration: One subdomain prefix per line
-- For admin panel discovery: One path per line
-
-## Note
-
-The tool automatically handles various domain formats:
-- Removes "http://" and "https://" prefixes
-- Removes "www." prefix
-- Removes trailing slashes
+- https://github.com/ckotch47/cerber-v2/wiki
+- https://github.com/ckotch47/cerber-v2/wiki/Commands
+- https://github.com/ckotch47/cerber-v2/wiki/API-Scan
+- https://github.com/ckotch47/cerber-v2/wiki/Troubleshooting
 
 ## Version
 
-Current version: v0.0.1a
+Current version: `v0.0.1a`
 
-Release docs:
+## Deprecations
+
+- `--worldlis` is a deprecated alias for `--wordlist`.
+- It stays available in `v0.0.1a` for compatibility.
+- Planned removal: next minor release after migration window.
+
+## Release Notes
+
 - `MVP_CHECKLIST.md`
 - `CHANGELOG_MIGRATION.md`
 - `VERSIONING.md`
 - `RELEASE_CHECKLIST.md`
-
-## License
-
-[Add your license information here]

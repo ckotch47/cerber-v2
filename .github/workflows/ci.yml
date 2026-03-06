@@ -31,3 +31,6 @@ jobs:
 
       - name: Run tests
         run: go test ./...
+
+      - name: Run CLI smoke tests
+        run: go test -run '^TestCLISmoke' .
