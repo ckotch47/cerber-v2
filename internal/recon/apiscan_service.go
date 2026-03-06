@@ -29,17 +29,43 @@ type APIScanResult struct {
 type APIScanner struct {
 	client         *http.Client
 	requestTimeout time.Duration
+	headers        map[string]string
 }
 
-func NewAPIScanner(requestTimeoutSec int) *APIScanner {
+func NewAPIScanner(requestTimeoutSec int, headers map[string]string) *APIScanner {
 	reqTimeout := time.Duration(requestTimeoutSec) * time.Second
 	if reqTimeout <= 0 {
 		reqTimeout = 10 * time.Second
 	}
+	h := make(map[string]string, len(headers))
+	for k, v := range headers {
+		h[k] = v
+	}
 	return &APIScanner{
 		client:         &http.Client{},
 		requestTimeout: reqTimeout,
+		headers:        h,
 	}
+}
+
+func BuildAuthHeaders(jwt string, apiKeyHeader string, apiKey string) (map[string]string, error) {
+	headers := make(map[string]string)
+	if strings.TrimSpace(jwt) != "" {
+		headers["Authorization"] = "Bearer " + strings.TrimSpace(jwt)
+	}
+
+	apiKeyHeader = strings.TrimSpace(apiKeyHeader)
+	apiKey = strings.TrimSpace(apiKey)
+	if apiKey != "" && apiKeyHeader == "" {
+		return nil, fmt.Errorf("для --api-key требуется --api-key-header")
+	}
+	if apiKey == "" && apiKeyHeader != "" {
+		return nil, fmt.Errorf("для --api-key-header требуется --api-key")
+	}
+	if apiKey != "" && apiKeyHeader != "" {
+		headers[apiKeyHeader] = apiKey
+	}
+	return headers, nil
 }
 
 func (s *APIScanner) LoadSpec(specSource string) (OpenAPISpec, error) {
@@ -126,6 +152,9 @@ func (s *APIScanner) request(method string, target string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	for k, v := range s.headers {
+		req.Header.Set(k, v)
+	}
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return 0, err
@@ -142,6 +171,9 @@ func (s *APIScanner) readFromURL(source string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, source, nil)
 	if err != nil {
 		return nil, err
+	}
+	for k, v := range s.headers {
+		req.Header.Set(k, v)
 	}
 	resp, err := s.client.Do(req)
 	if err != nil {

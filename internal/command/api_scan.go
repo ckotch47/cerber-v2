@@ -15,6 +15,9 @@ var (
 	apiShow       string
 	apiExclude    string
 	apiTimeout    int
+	apiJWT        string
+	apiKeyHeader  string
+	apiKey        string
 )
 
 var apiCmd = &cobra.Command{
@@ -59,6 +62,24 @@ func init() {
 		10,
 		"Таймаут HTTP запроса в секундах",
 	)
+	apiScanCmd.Flags().StringVar(
+		&apiJWT,
+		"jwt",
+		"",
+		"JWT токен для Authorization: Bearer <token>",
+	)
+	apiScanCmd.Flags().StringVar(
+		&apiKeyHeader,
+		"api-key-header",
+		"",
+		"Имя заголовка для API key (например: X-API-Key)",
+	)
+	apiScanCmd.Flags().StringVar(
+		&apiKey,
+		"api-key",
+		"",
+		"Значение API key",
+	)
 	_ = apiScanCmd.MarkFlagRequired("spec")
 	_ = apiScanCmd.MarkFlagRequired("host")
 
@@ -80,7 +101,12 @@ func runAPIScan(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("невалидный --exclude: %w", err)
 	}
 
-	scanner := recon.NewAPIScanner(apiTimeout)
+	headers, err := recon.BuildAuthHeaders(apiJWT, apiKeyHeader, apiKey)
+	if err != nil {
+		return err
+	}
+
+	scanner := recon.NewAPIScanner(apiTimeout, headers)
 	spec, err := scanner.LoadSpec(apiSpecSource)
 	if err != nil {
 		return err

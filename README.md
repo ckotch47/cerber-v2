@@ -68,11 +68,14 @@ cerber [command] [flags]
 
 6. **api scan** - Scan OpenAPI endpoints
    ```bash
-   cerber api scan --spec ./openapi.json --host https://api.example.com [--show 200,201] [--exclude 401,403]
+   cerber api scan --spec ./openapi.json --host https://api.example.com [--jwt TOKEN | --api-key-header X-API-Key --api-key VALUE] [--show 200,201] [--exclude 401,403]
    ```
    Flags:
    - `--spec`: Path or URL to `openapi.json` (required)
    - `--host`: Base API URL for requests (required)
+   - `--jwt`: JWT token (`Authorization: Bearer ...`)
+   - `--api-key-header`: API key header name
+   - `--api-key`: API key value
    - `--show`: Show only these status codes
    - `--exclude`: Hide these status codes
    - `--request-timeout`: HTTP timeout per request in seconds (default: 10)
