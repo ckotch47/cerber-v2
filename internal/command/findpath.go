@@ -1,37 +1,42 @@
 package command
 
 import (
-	"cerber/internal/style"
-	"cerber/internal/utils"
 	"fmt"
-	"io"
-	"net/http"
 	"strconv"
-	"strings"
-	"time"
+
+	"cerber/internal/i18n"
 
 	"github.com/spf13/cobra"
+
+	"cerber/internal/recon"
+	"cerber/internal/style"
+	"cerber/internal/utils"
 )
 
 var commandPathFinder utils.AdminFindeType
 
-type StringSlice map[string]bool
-
 var findPathCmd = &cobra.Command{
 	Use:   "path",
-	Short: "Поиск админ панелей",
-	Long:  `Поиск админ панелей`,
-	Run:   FindHiddenPath,
+	Short: i18n.T("cmd_short_find_path"),
+	Long:  i18n.T("cmd_short_find_path"),
+	RunE:  FindHiddenPath,
 }
 
 func init() {
 	findPathCmd.Flags().StringVarP(
 		&commandPathFinder.WorldList,
-		"worldlis",
+		"wordlist",
 		"w",
 		"",
 		"Файл со списком",
 	)
+	findPathCmd.Flags().StringVar(
+		&commandPathFinder.WorldList,
+		"worldlis",
+		"",
+		"Устаревший алиас для --wordlist",
+	)
+	_ = findPathCmd.Flags().MarkDeprecated("worldlis", "use --wordlist instead")
 	findPathCmd.Flags().StringArrayVarP(
 		&commandPathFinder.Exclude,
 		"exclude",
@@ -46,68 +51,62 @@ func init() {
 		5,
 		"Время задержки между запросами в секндах (по умолчанию 5 сек)",
 	)
+	findPathCmd.Flags().IntVar(
+		&commandPathFinder.RequestTimeout,
+		"request-timeout",
+		10,
+		"Таймаут HTTP запроса в секундах",
+	)
 }
 
-func FindHiddenPath(cmd *cobra.Command, args []string) {
+func FindHiddenPath(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		fmt.Println(style.NotFoundStyle.Render("Не указан домен"))
-		return
+		return fmt.Errorf(i18n.T("err_domain_required"))
 	}
 	if commandPathFinder.WorldList == "" {
-		fmt.Println(style.NotFoundStyle.Render("Файл со списком не найден"))
-		return
+		return fmt.Errorf(i18n.T("err_wordlist_required"))
 	}
-	domain := strings.TrimSuffix(args[0], "/")
-	worldList := utils.ReadFile(commandPathFinder.WorldList)
 
-	for _, path := range worldList {
-		get(domain+"/"+path, path)
+	domain := recon.NormalizeBaseURL(args[0])
+	if domain == "" {
+		return fmt.Errorf(i18n.T("err_domain_empty_after_normalize"))
 	}
-}
-
-func get(url, path string) {
-	// Делаем GET-запрос
-	resp, err := http.Get(url)
+	worldList, err := utils.ReadFile(commandPathFinder.WorldList)
 	if err != nil {
-		fmt.Println("Ошибка запроса:", style.NotFoundStyle.Render(err.Error()))
-		return
+		return fmt.Errorf(i18n.T("err_read_wordlist"), err)
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
 
+	scanner := recon.NewPathScanner(
+		commandPathFinder.RequestTimeout,
+		commandPathFinder.Timeout,
+		commandPathFinder.Exclude,
+		!recon.HasHTTPPrefix(args[0]),
+	)
+	results := scanner.Scan(domain, worldList)
+
+	for _, result := range results {
+		if result.Err != nil {
+			fmt.Println(i18n.T("msg_request_error_prefix"), style.NotFoundStyle.Render(result.URL+" -> "+result.Err.Error()))
+			continue
 		}
-	}(resp.Body) // обязательно закрываем тело ответа
-	printRespStatus(resp, path)
-	time.Sleep(time.Duration(commandPathFinder.Timeout) * time.Second)
+		printRespStatus(result.StatusCode, result.Path, scanner.IsExcluded(result.StatusCode))
+	}
+
+	return nil
 }
 
-func printRespStatus(resp *http.Response, path string) {
+func printRespStatus(statusCode int, path string, excluded bool) {
 	var strResp string
 
-	if arrayToMap(commandPathFinder.Exclude)[strconv.Itoa(resp.StatusCode)] {
+	if excluded {
 		return
 	}
 
-	if resp.StatusCode > 400 {
-		strResp = path + " : " + style.NotFoundStyle.Render(strconv.Itoa(resp.StatusCode))
+	if statusCode >= 400 {
+		strResp = path + " : " + style.NotFoundStyle.Render(strconv.Itoa(statusCode))
 	} else {
-		strResp = path + " : " + style.SuccessStyle.Render(strconv.Itoa(resp.StatusCode))
+		strResp = path + " : " + style.SuccessStyle.Render(strconv.Itoa(statusCode))
 	}
 
-	fmt.Println(strResp) // выводим статус ответа
-}
-
-func arrayToMap(exclude []string) StringSlice {
-	if exclude == nil {
-		return StringSlice{}
-	}
-	res := make(StringSlice)
-
-	for _, code := range exclude {
-		if code != "" {
-			res[code] = true
-		}
-	}
-	return res
+	fmt.Println(strResp)
 }

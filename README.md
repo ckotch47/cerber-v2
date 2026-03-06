@@ -23,6 +23,9 @@ go install
 cerber [command] [flags]
 ```
 
+Global flag:
+- `--lang auto|ru|en` — language for runtime messages (default: `auto`, detected from system locale)
+
 ### Available Commands
 
 1. **look** - Find IP addresses for a domain
@@ -32,19 +35,22 @@ cerber [command] [flags]
 
 2. **find** - Perform subdomain enumeration
    ```bash
-   cerber find example.com -w wordlist.txt [-r]
+   cerber find example.com -w wordlist.txt [-r] [--max-depth N] [-c N]
    ```
    Flags:
-   - `-w, --worldlis`: Path to the wordlist file (required)
+   - `-w, --wordlist`: Path to the wordlist file (required)
    - `-r, --recurse`: Enable recursive subdomain enumeration
+   - `--max-depth`: Max recursion depth for recursive mode (default: 2)
+   - `-c, --concurrency`: Number of parallel DNS lookups (default: 20)
 
 3. **find path** - Search for hidden path 
    ```bash
-   cerber find path example.com -w wordlist.txt [-e status_codes]
+   cerber find path example.com -w wordlist.txt [-e status_codes] [--request-timeout seconds]
    ```
    Flags:
-   - `-w, --worldlis`: Path to the wordlist file (required)
+   - `-w, --wordlist`: Path to the wordlist file (required)
    - `-e, --exclude`: Status codes to exclude from results (can be specified multiple times)
+   - `--request-timeout`: HTTP timeout per request in seconds (default: 10)
    
    Example:
    ```bash
@@ -54,6 +60,35 @@ cerber [command] [flags]
 4. **version** - Show application version
    ```bash
    cerber version
+   ```
+
+5. **google links** - Generate Google dork links
+   ```bash
+   cerber google links example.com [--mode all|1,5,12]
+   ```
+   Flags:
+   - `--mode`: Modes list (comma-separated) or `all` (default: `all`)
+
+6. **api scan** - Scan OpenAPI endpoints
+   ```bash
+   cerber api scan --spec ./openapi.json --host https://api.example.com [--jwt TOKEN | --api-key-header X-API-Key --api-key VALUE] [--show 200,201 | --exclude 401,403]
+   ```
+   Flags:
+   - `--spec`: Path or URL to `openapi.json` (required)
+   - `--host`: Base API URL for requests (required)
+   - `--jwt`: JWT token (`Authorization: Bearer ...`)
+   - `--api-key-header`: API key header name
+   - `--api-key`: API key value
+   - `--spec-auth`: Send auth headers while fetching `--spec` URL (default: `true`)
+   - `--show`: Show only these status codes (mutually exclusive with `--exclude`)
+   - `--exclude`: Hide these status codes (mutually exclusive with `--show`)
+   - `--show-errors`: Print network/request errors (default: `true`)
+   - `--request-timeout`: HTTP timeout per request in seconds (default: 10)
+
+   Examples:
+   ```bash
+   cerber api scan --spec https://api.example.com/openapi.json --host https://api.example.com --jwt <JWT> --show 200
+   cerber api scan --spec ./openapi.json --host https://api.example.com --api-key-header X-API-Key --api-key <KEY> --exclude 401,403
    ```
 
 ## Examples
@@ -75,7 +110,7 @@ cerber [command] [flags]
 
 4. Admin panel discovery (excluding 404 responses):
    ```bash
-   cerber find admin example.com -w admin-paths.txt -e 404
+   cerber find path example.com -w admin-paths.txt -e 404
    ```
 
 ## Wordlist Format
@@ -93,6 +128,12 @@ The tool automatically handles various domain formats:
 ## Version
 
 Current version: v0.0.1a
+
+Release docs:
+- `MVP_CHECKLIST.md`
+- `CHANGELOG_MIGRATION.md`
+- `VERSIONING.md`
+- `RELEASE_CHECKLIST.md`
 
 ## License
 

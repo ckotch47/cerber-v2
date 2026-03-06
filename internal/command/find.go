@@ -3,29 +3,38 @@ package command
 import (
 	"fmt"
 
+	"cerber/internal/i18n"
+
 	"github.com/spf13/cobra"
 
+	"cerber/internal/recon"
 	"cerber/internal/style"
 	"cerber/internal/utils"
 )
 
 var findCmd = &cobra.Command{
 	Use:   "find",
-	Short: "Выполняет поиск поддоменов по списку из файла",
-	Run:   FindHost,
+	Short: i18n.T("cmd_short_find"),
+	RunE:  FindHost,
 }
 
 var commandBruteForce utils.BruteForceType
-var MaxDepth int = 2
 
 func init() {
 	findCmd.Flags().StringVarP(
 		&commandBruteForce.WorldList,
-		"worldlis",
+		"wordlist",
 		"w",
 		"",
 		"Файл со списком",
 	)
+	findCmd.Flags().StringVar(
+		&commandBruteForce.WorldList,
+		"worldlis",
+		"",
+		"Устаревший алиас для --wordlist",
+	)
+	_ = findCmd.Flags().MarkDeprecated("worldlis", "use --wordlist instead")
 	findCmd.Flags().BoolVarP(
 		&commandBruteForce.Recurse,
 		"recurse",
@@ -33,35 +42,48 @@ func init() {
 		false,
 		"Включить рекурсию для брутфорса",
 	)
+	findCmd.Flags().IntVar(
+		&commandBruteForce.MaxDepth,
+		"max-depth",
+		2,
+		"Максимальная глубина рекурсии для поиска поддоменов",
+	)
+	findCmd.Flags().IntVarP(
+		&commandBruteForce.Concurrency,
+		"concurrency",
+		"c",
+		20,
+		"Количество параллельных DNS-запросов",
+	)
 }
 
-func FindHost(cmd *cobra.Command, args []string) {
+func FindHost(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		fmt.Println(style.NotFoundStyle.Render("Не указан домен"))
-		return
+		return fmt.Errorf(i18n.T("err_domain_required"))
 	}
 	if commandBruteForce.WorldList == "" {
-		fmt.Println(style.NotFoundStyle.Render("Файл со списком не найден"))
-		return
+		return fmt.Errorf(i18n.T("err_wordlist_required"))
 	}
 
-	domain := cleanDomain(args[0])
-	domainList := utils.ReadFile(commandBruteForce.WorldList)
-
-	findSubDomains(domain, domainList, 0)
-}
-
-func findSubDomains(domain string, worldlist []string, depth int) {
-	if depth > MaxDepth {
-		return
+	domain, err := cleanDomain(args[0])
+	if err != nil {
+		return err
+	}
+	domainList, err := utils.ReadFile(commandBruteForce.WorldList)
+	if err != nil {
+		return fmt.Errorf(i18n.T("err_read_wordlist"), err)
 	}
 
-	for _, prefix := range worldlist {
-		if prefix != "" && len(lookupHost(prefix+"."+domain)) > 0 {
-			fmt.Println(style.SuccessStyle.Render(prefix + "." + domain))
-			if commandBruteForce.Recurse {
-				findSubDomains(prefix+"."+domain, worldlist, depth+1)
-			}
-		}
+	scanner := recon.NewSubdomainScanner(nil)
+	found := scanner.Collect(
+		domain,
+		domainList,
+		commandBruteForce.Recurse,
+		commandBruteForce.MaxDepth,
+		commandBruteForce.Concurrency,
+	)
+	for _, subdomain := range found {
+		fmt.Println(style.SuccessStyle.Render(subdomain))
 	}
+	return nil
 }

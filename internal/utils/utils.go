@@ -2,31 +2,37 @@ package utils
 
 import (
 	"bufio"
-	"fmt"
+	"errors"
 	"strings"
+
+	"cerber/internal/i18n"
 
 	"os"
 )
 
 type BruteForceType struct {
-	WorldList string
-	BruteForce bool
-	Recurse bool
+	WorldList   string
+	Recurse     bool
+	MaxDepth    int
+	Concurrency int
 }
 
 type AdminFindeType struct {
-	WorldList string
-	Exclude []string
-	Timeout int
+	WorldList      string
+	Exclude        []string
+	Timeout        int
+	RequestTimeout int
 }
 
-func ReadFile(path string) []string {
+func ReadFile(path string) ([]string, error) {
 	line, err := readLines(path)
 	if err != nil {
-		fmt.Println(err)
-		return nil
+		return nil, err
 	}
-	return line	
+	if len(line) == 0 {
+		return nil, errors.New(i18n.T("err_file_empty"))
+	}
+	return line, nil
 }
 
 func readLines(filename string) ([]string, error) {

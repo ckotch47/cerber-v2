@@ -5,32 +5,36 @@ import (
 	"os"
 	"strings"
 
+	"cerber/internal/i18n"
+
 	"github.com/spf13/cobra"
 )
 
 // rootCmd — основная команда
 var rootCmd = &cobra.Command{
-	Use:   "cerber [domain]",
-	Short: "Краткое описание",
-	Long:  `Полное описание моего приложения`,
-	Args:  cobra.ExactArgs(1), // Ожидаем ровно один аргумент
-	Run: func(cmd *cobra.Command, args []string) {
-
-		lookupHostRun(cmd, args)
-
-		// Например, вызвать аналог find или lookup:
-		// processDomain(domain)
-	},
+	Use:   "cerber",
+	Short: i18n.T("cmd_short_root"),
+	Long:  i18n.T("cmd_long_root"),
 }
+
+var cliLang string
 
 func init() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
+	rootCmd.SilenceUsage = true
+	rootCmd.SilenceErrors = true
+	rootCmd.PersistentFlags().StringVar(&cliLang, "lang", "auto", i18n.T("lang_flag_desc"))
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		return i18n.SetLang(cliLang)
+	}
 	rootCmd.AddCommand(versionCmd)
 
 	rootCmd.AddCommand(findCmd)
 	findCmd.AddCommand(findPathCmd)
 
 	rootCmd.AddCommand(LookCmd)
+	rootCmd.AddCommand(googleCmd)
+	rootCmd.AddCommand(apiCmd)
 }
 
 // Execute запускает root команду
@@ -41,17 +45,29 @@ func Execute() {
 	}
 }
 
-func cleanDomain(searchDomain string) string {
-	if len(searchDomain) == 0 {
-		panic("not domain")
+func cleanDomain(searchDomain string) (string, error) {
+	if len(strings.TrimSpace(searchDomain)) == 0 {
+		return "", fmt.Errorf(i18n.T("err_domain_required"))
 	}
-	// Убираем "http://", "https://", "www."
-	searchDomain = strings.TrimPrefix(searchDomain, "http://")
-	searchDomain = strings.TrimPrefix(searchDomain, "https://")
+	searchDomain = strings.TrimSpace(searchDomain)
+	// Убираем "http://", "https://", "www." без учета регистра
+	searchDomain = trimPrefixFold(searchDomain, "http://")
+	searchDomain = trimPrefixFold(searchDomain, "https://")
 	searchDomain = strings.TrimSuffix(searchDomain, "/")
 
-	if res := strings.HasPrefix(searchDomain, "www."); res {
-		searchDomain = searchDomain[4:]
+	searchDomain = trimPrefixFold(searchDomain, "www.")
+	if searchDomain == "" {
+		return "", fmt.Errorf(i18n.T("err_domain_empty_after_normalize"))
 	}
-	return searchDomain
+	return searchDomain, nil
+}
+
+func trimPrefixFold(s, prefix string) string {
+	if len(s) < len(prefix) {
+		return s
+	}
+	if strings.EqualFold(s[:len(prefix)], prefix) {
+		return s[len(prefix):]
+	}
+	return s
 }
