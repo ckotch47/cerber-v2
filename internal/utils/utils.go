@@ -2,7 +2,7 @@ package utils
 
 import (
 	"bufio"
-	"fmt"
+	"errors"
 	"strings"
 
 	"os"
@@ -22,13 +22,15 @@ type AdminFindeType struct {
 	RequestTimeout int
 }
 
-func ReadFile(path string) []string {
+func ReadFile(path string) ([]string, error) {
 	line, err := readLines(path)
 	if err != nil {
-		fmt.Println(err)
-		return nil
+		return nil, err
 	}
-	return line
+	if len(line) == 0 {
+		return nil, errors.New("файл пустой")
+	}
+	return line, nil
 }
 
 func readLines(filename string) ([]string, error) {

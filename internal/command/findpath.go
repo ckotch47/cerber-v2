@@ -69,9 +69,9 @@ func FindHiddenPath(cmd *cobra.Command, args []string) error {
 	if domain == "" {
 		return fmt.Errorf("домен пуст после нормализации")
 	}
-	worldList := utils.ReadFile(commandPathFinder.WorldList)
-	if len(worldList) == 0 {
-		return fmt.Errorf("файл со списком пустой или не удалось прочитать")
+	worldList, err := utils.ReadFile(commandPathFinder.WorldList)
+	if err != nil {
+		return fmt.Errorf("не удалось прочитать wordlist: %w", err)
 	}
 
 	scanner := recon.NewPathScanner(

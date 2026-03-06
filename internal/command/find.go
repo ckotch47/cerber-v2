@@ -67,9 +67,9 @@ func FindHost(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	domainList := utils.ReadFile(commandBruteForce.WorldList)
-	if len(domainList) == 0 {
-		return fmt.Errorf("файл со списком пустой или не удалось прочитать")
+	domainList, err := utils.ReadFile(commandBruteForce.WorldList)
+	if err != nil {
+		return fmt.Errorf("не удалось прочитать wordlist: %w", err)
 	}
 
 	scanner := recon.NewSubdomainScanner(nil)

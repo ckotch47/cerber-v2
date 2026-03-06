@@ -54,7 +54,8 @@ func NormalizeBaseURL(input string) string {
 }
 
 func HasHTTPPrefix(input string) bool {
-	return strings.HasPrefix(input, "http://") || strings.HasPrefix(input, "https://")
+	lowered := strings.ToLower(input)
+	return strings.HasPrefix(lowered, "http://") || strings.HasPrefix(lowered, "https://")
 }
 
 func JoinURL(baseURL, path string) string {
@@ -86,15 +87,14 @@ func (s *PathScanner) Scan(baseURL string, paths []string) []PathResult {
 				URL:  actualURL,
 				Err:  err,
 			})
-			continue
+		} else {
+			_ = resp.Body.Close()
+			results = append(results, PathResult{
+				Path:       path,
+				URL:        actualURL,
+				StatusCode: resp.StatusCode,
+			})
 		}
-
-		_ = resp.Body.Close()
-		results = append(results, PathResult{
-			Path:       path,
-			URL:        actualURL,
-			StatusCode: resp.StatusCode,
-		})
 
 		if s.delay > 0 {
 			time.Sleep(s.delay)

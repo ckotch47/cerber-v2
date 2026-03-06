@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNormalizeBaseURL(t *testing.T) {
@@ -35,6 +36,12 @@ func TestJoinURL(t *testing.T) {
 	}
 }
 
+func TestHasHTTPPrefixCaseInsensitive(t *testing.T) {
+	if !HasHTTPPrefix("HTTPS://example.com") {
+		t.Fatalf("expected HTTPS:// prefix to be recognized")
+	}
+}
+
 func TestPathScannerFallbackToHTTP(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -57,5 +64,23 @@ func TestPathScannerFallbackToHTTP(t *testing.T) {
 	}
 	if !strings.HasPrefix(res[0].URL, "http://") {
 		t.Fatalf("expected fallback url to use http, got %q", res[0].URL)
+	}
+}
+
+func TestPathScannerAppliesDelayOnErrors(t *testing.T) {
+	scanner := NewPathScanner(1, 1, nil, false)
+
+	start := time.Now()
+	res := scanner.Scan("https://%", []string{"admin"})
+	elapsed := time.Since(start)
+
+	if len(res) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(res))
+	}
+	if res[0].Err == nil {
+		t.Fatalf("expected an error result")
+	}
+	if elapsed < time.Second {
+		t.Fatalf("expected delay to apply on error, elapsed=%v", elapsed)
 	}
 }
