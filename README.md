@@ -32,11 +32,13 @@ cerber [command] [flags]
 
 2. **find** - Perform subdomain enumeration
    ```bash
-   cerber find example.com -w wordlist.txt [-r]
+   cerber find example.com -w wordlist.txt [-r] [--max-depth N] [-c N]
    ```
    Flags:
    - `-w, --wordlist`: Path to the wordlist file (required)
    - `-r, --recurse`: Enable recursive subdomain enumeration
+   - `--max-depth`: Max recursion depth for recursive mode (default: 2)
+   - `-c, --concurrency`: Number of parallel DNS lookups (default: 20)
 
 3. **find path** - Search for hidden path 
    ```bash

@@ -2,6 +2,9 @@ package command
 
 import (
 	"fmt"
+	"sort"
+	"strings"
+	"sync"
 
 	"github.com/spf13/cobra"
 
@@ -16,7 +19,6 @@ var findCmd = &cobra.Command{
 }
 
 var commandBruteForce utils.BruteForceType
-var MaxDepth int = 2
 
 func init() {
 	findCmd.Flags().StringVarP(
@@ -40,6 +42,19 @@ func init() {
 		false,
 		"Включить рекурсию для брутфорса",
 	)
+	findCmd.Flags().IntVar(
+		&commandBruteForce.MaxDepth,
+		"max-depth",
+		2,
+		"Максимальная глубина рекурсии для поиска поддоменов",
+	)
+	findCmd.Flags().IntVarP(
+		&commandBruteForce.Concurrency,
+		"concurrency",
+		"c",
+		20,
+		"Количество параллельных DNS-запросов",
+	)
 }
 
 func FindHost(cmd *cobra.Command, args []string) {
@@ -54,21 +69,106 @@ func FindHost(cmd *cobra.Command, args []string) {
 
 	domain := cleanDomain(args[0])
 	domainList := utils.ReadFile(commandBruteForce.WorldList)
-
-	findSubDomains(domain, domainList, 0)
-}
-
-func findSubDomains(domain string, worldlist []string, depth int) {
-	if depth > MaxDepth {
+	if len(domainList) == 0 {
+		fmt.Println(style.NotFoundStyle.Render("Файл со списком пустой или не удалось прочитать"))
 		return
 	}
 
-	for _, prefix := range worldlist {
-		if prefix != "" && len(lookupHost(prefix+"."+domain)) > 0 {
-			fmt.Println(style.SuccessStyle.Render(prefix + "." + domain))
-			if commandBruteForce.Recurse {
-				findSubDomains(prefix+"."+domain, worldlist, depth+1)
+	found := collectSubDomains(
+		domain,
+		domainList,
+		commandBruteForce.Recurse,
+		commandBruteForce.MaxDepth,
+		commandBruteForce.Concurrency,
+		hostExists,
+	)
+	for _, subdomain := range found {
+		fmt.Println(style.SuccessStyle.Render(subdomain))
+	}
+}
+
+func collectSubDomains(
+	rootDomain string,
+	wordlist []string,
+	recurse bool,
+	maxDepth int,
+	concurrency int,
+	resolver func(string) bool,
+) []string {
+	if maxDepth < 0 {
+		maxDepth = 0
+	}
+	if concurrency <= 0 {
+		concurrency = 1
+	}
+
+	visited := make(map[string]struct{})
+	foundSet := make(map[string]struct{})
+	found := make([]string, 0)
+	semaphore := make(chan struct{}, concurrency)
+
+	var scan func(domain string, depth int)
+	scan = func(domain string, depth int) {
+		if depth > maxDepth {
+			return
+		}
+
+		candidates := make([]string, 0, len(wordlist))
+		for _, prefix := range wordlist {
+			prefix = strings.TrimSpace(prefix)
+			if prefix == "" {
+				continue
 			}
+			fqdn := prefix + "." + domain
+			if _, ok := visited[fqdn]; ok {
+				continue
+			}
+			visited[fqdn] = struct{}{}
+			candidates = append(candidates, fqdn)
+		}
+
+		levelFound := make([]string, 0)
+		var wg sync.WaitGroup
+		results := make(chan string, len(candidates))
+
+		for _, fqdn := range candidates {
+			wg.Add(1)
+			go func(candidate string) {
+				defer wg.Done()
+				semaphore <- struct{}{}
+				ok := resolver(candidate)
+				<-semaphore
+				if ok {
+					results <- candidate
+				}
+			}(fqdn)
+		}
+
+		wg.Wait()
+		close(results)
+
+		for fqdn := range results {
+			if _, ok := foundSet[fqdn]; ok {
+				continue
+			}
+			foundSet[fqdn] = struct{}{}
+			found = append(found, fqdn)
+			levelFound = append(levelFound, fqdn)
+		}
+
+		if !recurse || depth >= maxDepth {
+			return
+		}
+		for _, sub := range levelFound {
+			scan(sub, depth+1)
 		}
 	}
+
+	scan(rootDomain, 0)
+	sort.Strings(found)
+	return found
+}
+
+var hostExists = func(host string) bool {
+	return len(lookupHost(host)) > 0
 }
