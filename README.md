@@ -66,6 +66,17 @@ cerber [command] [flags]
    Flags:
    - `--mode`: Modes list (comma-separated) or `all` (default: `all`)
 
+6. **api scan** - Scan OpenAPI endpoints
+   ```bash
+   cerber api scan --spec ./openapi.json --host https://api.example.com [--show 200,201] [--exclude 401,403]
+   ```
+   Flags:
+   - `--spec`: Path or URL to `openapi.json` (required)
+   - `--host`: Base API URL for requests (required)
+   - `--show`: Show only these status codes
+   - `--exclude`: Hide these status codes
+   - `--request-timeout`: HTTP timeout per request in seconds (default: 10)
+
 ## Examples
 
 1. Basic DNS lookup:

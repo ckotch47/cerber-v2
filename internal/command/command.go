@@ -26,6 +26,7 @@ func init() {
 
 	rootCmd.AddCommand(LookCmd)
 	rootCmd.AddCommand(googleCmd)
+	rootCmd.AddCommand(apiCmd)
 }
 
 // Execute запускает root команду
