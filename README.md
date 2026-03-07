@@ -32,12 +32,12 @@ cerber api scan --spec <url-or-file> --host <base-url> [--jwt TOKEN | --api-key-
 
 ## Version
 
-Current version: `v0.0.1a`
+Current version: `v0.0.1`
 
 ## Deprecations
 
 - `--worldlis` is a deprecated alias for `--wordlist`.
-- It stays available in `v0.0.1a` for compatibility.
+- It stays available in `v0.0.1` for compatibility.
 - Planned removal: next minor release after migration window.
 
 ## Release Notes

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"cerber/internal/version"
 )
 
 var ansiPattern = regexp.MustCompile(`\x1b\[[0-9;]*m`)
@@ -22,7 +25,8 @@ func TestCLISmokeVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("version command failed: %v\noutput:\n%s", err, out)
 	}
-	if !strings.Contains(stripANSI(out), "Version: v0.0.1a") {
+	expected := fmt.Sprintf("Version: %s", version.String)
+	if !strings.Contains(stripANSI(out), expected) {
 		t.Fatalf("unexpected version output:\n%s", out)
 	}
 }
@@ -95,6 +99,19 @@ func TestCLISmokeAPIScan(t *testing.T) {
 	}
 }
 
+func TestCLISmokeHelpLanguage(t *testing.T) {
+	t.Parallel()
+
+	out, err := runCerber(t, "--lang", "en", "--help")
+	if err != nil {
+		t.Fatalf("help command failed: %v\noutput:\n%s", err, out)
+	}
+	plain := stripANSI(out)
+	if !strings.Contains(plain, "Cerber is a CLI tool for DNS lookup, subdomain discovery, and hidden path scanning.") {
+		t.Fatalf("expected English help text, got:\n%s", out)
+	}
+}
+
 func runCerber(t *testing.T, args ...string) (string, error) {
 	t.Helper()
 
@@ -102,7 +119,7 @@ func runCerber(t *testing.T, args ...string) (string, error) {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", append([]string{"run", "."}, args...)...)
-	cmd.Dir = "/Users/blant/GoLangProject/lessons/cerber"
+	cmd.Dir = "."
 	cmd.Env = append(os.Environ(), "GOCACHE=/tmp/.gocache")
 	out, err := cmd.CombinedOutput()
 	return string(out), err
